@@ -49,6 +49,9 @@ export function StoryDisplay({ story, isGenerating }: StoryDisplayProps) {
 
   const handleWordClick = useCallback(
     (word: string) => {
+      // Speak immediately inside the gesture handler — required for iOS Safari,
+      // which blocks speech synthesis triggered outside a direct user event.
+      speak(word);
       const sentence = getSentenceForWord(story, word);
       setSelected({ word, sentence });
     },

@@ -450,6 +450,10 @@ button {
   position: relative;
   box-shadow: var(--shadow-lg);
   animation: slide-up 0.22s ease;
+  /* Keep card within viewport on short screens */
+  max-height: 90vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 @keyframes slide-up {
@@ -582,6 +586,57 @@ button {
 
 .btn-text-link:hover {
   color: var(--primary);
+}
+
+/* ════════════════════════════════════════
+   Touch devices — larger tap targets, no hover flicker
+   ════════════════════════════════════════ */
+@media (hover: none) {
+  /* Words: underline instead of colour change so hover state never sticks */
+  .word:hover {
+    background: none;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .word {
+    /* Expand the invisible tap area without affecting text layout */
+    padding: 4px 3px;
+    margin: -4px -1px;
+    border-radius: 6px;
+  }
+
+  .word.word-active {
+    background: var(--accent);
+    color: #1a1a1a;
+  }
+
+  /* Grade buttons: slightly larger tap area */
+  .grade-btn {
+    min-height: 52px;
+  }
+
+  /* Popup slides up from the bottom on touch screens (thumb-friendly) */
+  .popup-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .popup-card {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    max-height: 85vh;
+    animation: slide-up-mobile 0.25s ease;
+  }
+
+  @keyframes slide-up-mobile {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
 }
 
 /* ════════════════════════════════════════

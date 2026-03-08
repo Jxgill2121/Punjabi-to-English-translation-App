@@ -22,11 +22,6 @@ export function WordPopup({ word, sentence, onClose, onSpeak }: WordPopupProps) 
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  // Speak the word immediately when popup opens
-  useEffect(() => {
-    onSpeak();
-  }, [onSpeak]);
-
   const handleGetDefinition = async () => {
     setLoading(true);
     setError(null);
