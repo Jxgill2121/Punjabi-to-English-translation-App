@@ -71,7 +71,7 @@ app.post('/api/story', async (req: Request, res: Response) => {
 
   try {
     const stream = client.messages.stream({
-      model: 'claude-opus-4-6',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 600,
       messages: [
         {
@@ -120,7 +120,7 @@ app.post('/api/define', async (req: Request, res: Response) => {
 
   try {
     const response = await client.messages.create({
-      model: 'claude-opus-4-6',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 300,
       messages: [
         {
