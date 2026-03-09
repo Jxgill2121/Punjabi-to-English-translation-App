@@ -884,10 +884,18 @@ button {
     color: #1a1a1a;
   }
 
-  /* Grade buttons: slightly larger tap area */
-  .grade-btn {
-    min-height: 52px;
-  }
+  /* All tappable buttons: Apple HIG minimum 44px */
+  .grade-btn     { min-height: 52px; }
+  .topic-btn     { min-height: 52px; }
+  .font-btn      { min-height: 44px; min-width: 44px; padding: 8px 10px; }
+  .btn-read-aloud { min-height: 44px; }
+  .history-toggle { min-height: 52px; }
+
+  /* Active press feedback */
+  .topic-btn:active  { opacity: 0.75; transform: scale(0.97); }
+  .grade-btn:active  { opacity: 0.75; transform: scale(0.97); }
+  .font-btn:active   { opacity: 0.75; }
+  .btn:active:not(:disabled) { opacity: 0.85; }
 
   /* Popup slides up from the bottom on touch screens (thumb-friendly) */
   .popup-overlay {
@@ -899,33 +907,37 @@ button {
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
     max-height: 85vh;
+    /* Account for home indicator on notch phones */
+    padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
     animation: slide-up-mobile 0.25s ease;
   }
 
   @keyframes slide-up-mobile {
-    from {
-      transform: translateY(100%);
-    }
-    to {
-      transform: translateY(0);
-    }
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
   }
 }
 
 /* ════════════════════════════════════════
-   Responsive
+   Responsive — small screens (phones)
    ════════════════════════════════════════ */
 @media (max-width: 600px) {
+  /* Safe area padding for notch / home-indicator phones */
+  .app {
+    padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+  }
+
   .header {
-    padding: 24px 20px 36px;
+    padding: calc(20px + env(safe-area-inset-top, 0px)) 16px 32px;
   }
 
   .title-pun {
-    font-size: 1.7rem;
+    font-size: 1.6rem;
   }
 
   .controls-card {
-    padding: 18px;
+    padding: 16px;
+    gap: 16px;
   }
 
   .grade-btn {
@@ -933,8 +945,44 @@ button {
     padding: 8px 10px;
   }
 
+  /* Topic grid: 4 per row on phone */
+  .topic-btn {
+    flex: 1 1 calc(25% - 6px);
+    min-width: 0;
+    padding: 8px 6px;
+  }
+
+  .topic-en { font-size: 0.78rem; }
+  .topic-pun { font-size: 0.66rem; }
+
+  /* Font controls + generate: stack cleanly */
+  .bottom-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .font-size-controls {
+    justify-content: center;
+  }
+
+  .bottom-controls .btn {
+    width: 100%;
+  }
+
+  /* Story toolbar: stack vertically on phone */
+  .story-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .btn-read-aloud {
+    justify-content: center;
+    width: 100%;
+  }
+
   .story-display {
-    padding: 18px;
+    padding: 16px;
   }
 
   .story-text.fs-sm { font-size: 0.95rem; }
@@ -947,5 +995,14 @@ button {
 
   .popup-word {
     font-size: 2.2rem;
+  }
+
+  /* History items: full padding */
+  .history-item {
+    padding: 14px 16px;
+  }
+
+  .history-toggle {
+    padding: 14px 16px;
   }
 }
