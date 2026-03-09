@@ -4,19 +4,29 @@ export interface Definition {
   example: string;
 }
 
+// In-memory + localStorage cache for definitions
+const defCache = new Map<string, Definition>();
+
+export function clearDefinitionCache(word: string): void {
+  const key = word.toLowerCase();
+  defCache.delete(key);
+  try { localStorage.removeItem(`def:${key}`); } catch { /* ignore */ }
+}
+
 /**
  * Streams a grade-appropriate English story from the server.
  * Calls onChunk for each text piece, onError if something goes wrong.
  */
 export async function generateStory(
   grade: number,
+  topic: string,
   onChunk: (text: string) => void,
   onError: (msg: string) => void,
 ): Promise<void> {
   const response = await fetch('/api/story', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ grade }),
+    body: JSON.stringify({ grade, topic }),
   });
 
   if (!response.ok || !response.body) {
@@ -56,11 +66,27 @@ export async function generateStory(
 
 /**
  * Fetches a Punjabi definition for a given English word.
+ * Results are cached in memory and localStorage.
  */
 export async function getDefinition(
   word: string,
   sentence: string,
 ): Promise<Definition> {
+  const key = word.toLowerCase();
+
+  // Check in-memory cache
+  if (defCache.has(key)) return defCache.get(key)!;
+
+  // Check localStorage cache
+  try {
+    const stored = localStorage.getItem(`def:${key}`);
+    if (stored) {
+      const parsed = JSON.parse(stored) as Definition;
+      defCache.set(key, parsed);
+      return parsed;
+    }
+  } catch { /* ignore */ }
+
   const response = await fetch('/api/define', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -72,5 +98,8 @@ export async function getDefinition(
     throw new Error(err.error ?? 'Failed to get definition');
   }
 
-  return response.json() as Promise<Definition>;
+  const def = await response.json() as Definition;
+  defCache.set(key, def);
+  try { localStorage.setItem(`def:${key}`, JSON.stringify(def)); } catch { /* ignore */ }
+  return def;
 }

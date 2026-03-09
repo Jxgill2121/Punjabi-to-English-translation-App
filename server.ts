@@ -55,7 +55,7 @@ const GRADE_CONFIGS: Record<number, { description: string; maxWords: number }> =
 
 // POST /api/story — streams a story via Server-Sent Events
 app.post('/api/story', async (req: Request, res: Response) => {
-  const { grade } = req.body as { grade: number };
+  const { grade, topic } = req.body as { grade: number; topic?: string };
 
   if (!grade || grade < 1 || grade > 7) {
     res.status(400).json({ error: 'Grade must be between 1 and 7' });
@@ -79,7 +79,7 @@ app.post('/api/story', async (req: Request, res: Response) => {
           content: `Write a short, engaging English story for someone learning English.
 
 Requirements:
-- Level: ${config.description}
+- Level: ${config.description}${topic ? `\n- Topic: ${topic} (use this topic, ignoring any topic suggested in the level description)` : ''}
 - Maximum ${config.maxWords} words total
 - Write a complete story with a clear beginning, middle, and end
 - Make it warm, interesting, and enjoyable to read

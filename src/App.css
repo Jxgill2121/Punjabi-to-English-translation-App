@@ -332,38 +332,8 @@ button {
   box-shadow: var(--shadow);
 }
 
-/* Hint banner inside story */
-.story-hint {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-bottom: 22px;
-  padding: 10px 16px;
-  background: var(--primary-light);
-  border-radius: 8px;
-  font-size: 0.88rem;
-  color: var(--primary-dark);
-  font-weight: 500;
-}
-
-.hint-pun {
-  font-family: var(--font-gurmukhi);
-}
-
-.hint-sep {
-  opacity: 0.5;
-}
-
-.hint-en {
-  font-style: italic;
-}
-
 /* Story prose */
 .story-text {
-  font-size: 1.3rem;
-  line-height: 2.1;
   color: var(--text);
 }
 
@@ -589,6 +559,309 @@ button {
 }
 
 /* ════════════════════════════════════════
+   Words learned badge (header)
+   ════════════════════════════════════════ */
+.words-learned-badge {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 5px 16px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: white;
+  letter-spacing: 0.02em;
+}
+
+/* ════════════════════════════════════════
+   Topic selector
+   ════════════════════════════════════════ */
+.topic-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.topic-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.topic-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 14px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  min-width: 80px;
+}
+
+.topic-btn:hover:not(:disabled) {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+.topic-btn.active {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 4px 12px rgba(232, 106, 37, 0.3);
+}
+
+.topic-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.topic-en {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.topic-pun {
+  font-family: var(--font-gurmukhi);
+  font-size: 0.72rem;
+  opacity: 0.85;
+}
+
+/* ════════════════════════════════════════
+   Bottom controls row (font size + generate)
+   ════════════════════════════════════════ */
+.bottom-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.bottom-controls .btn {
+  flex: 1;
+  width: auto;
+  min-width: 160px;
+}
+
+.font-size-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.font-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-right: 2px;
+  font-weight: 500;
+}
+
+.font-btn {
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+  padding: 4px 8px;
+  font-weight: 600;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  line-height: 1;
+}
+
+.font-btn-sm { font-size: 0.72rem; }
+.font-btn-md { font-size: 0.9rem; }
+.font-btn-lg { font-size: 1.1rem; }
+
+.font-btn:hover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+.font-btn.active {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: white;
+}
+
+/* ════════════════════════════════════════
+   Story toolbar (hint + read-aloud)
+   ════════════════════════════════════════ */
+.story-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+
+.story-hint {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px 14px;
+  background: var(--primary-light);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: var(--primary-dark);
+  font-weight: 500;
+  flex: 1;
+}
+
+.btn-read-aloud {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 2px solid var(--secondary);
+  border-radius: var(--radius-sm);
+  background: white;
+  color: var(--secondary);
+  font-weight: 600;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+  font-family: inherit;
+}
+
+.btn-read-aloud:hover:not(:disabled) {
+  background: var(--secondary);
+  color: white;
+}
+
+.btn-read-aloud.speaking {
+  background: var(--secondary);
+  color: white;
+}
+
+.btn-read-aloud:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-read-aloud span {
+  font-family: var(--font-gurmukhi);
+}
+
+/* ════════════════════════════════════════
+   Font size variants for story text
+   ════════════════════════════════════════ */
+.story-text.fs-sm {
+  font-size: 1.05rem;
+  line-height: 2;
+}
+
+.story-text.fs-md {
+  font-size: 1.3rem;
+  line-height: 2.1;
+}
+
+.story-text.fs-lg {
+  font-size: 1.6rem;
+  line-height: 2.2;
+}
+
+/* ════════════════════════════════════════
+   Learned word highlight
+   ════════════════════════════════════════ */
+.word.word-learned {
+  border-bottom: 2px solid var(--success);
+  color: var(--success);
+}
+
+/* ════════════════════════════════════════
+   Definition loading state (inside popup)
+   ════════════════════════════════════════ */
+.def-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.def-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+  flex-shrink: 0;
+}
+
+/* ════════════════════════════════════════
+   Story history
+   ════════════════════════════════════════ */
+.history-section {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.history-toggle {
+  width: 100%;
+  padding: 16px 24px;
+  background: none;
+  border: none;
+  text-align: left;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.history-toggle:hover {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.history-list {
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+
+.history-item {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.history-item:last-child {
+  border-bottom: none;
+}
+
+.history-meta {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.history-preview {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* ════════════════════════════════════════
    Touch devices — larger tap targets, no hover flicker
    ════════════════════════════════════════ */
 @media (hover: none) {
@@ -664,10 +937,9 @@ button {
     padding: 18px;
   }
 
-  .story-text {
-    font-size: 1.15rem;
-    line-height: 2;
-  }
+  .story-text.fs-sm { font-size: 0.95rem; }
+  .story-text.fs-md { font-size: 1.15rem; }
+  .story-text.fs-lg { font-size: 1.35rem; }
 
   .popup-card {
     padding: 28px 20px 22px;
