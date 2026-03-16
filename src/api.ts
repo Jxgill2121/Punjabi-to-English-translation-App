@@ -1,3 +1,50 @@
+export interface InterviewQuestion {
+  question: string;
+  punjabi: string;
+  tip: string;
+}
+
+export interface InterviewFeedback {
+  score: 'good' | 'ok' | 'needs-work';
+  feedbackEn: string;
+  feedbackPunjabi: string;
+  example: string;
+}
+
+export async function getInterviewQuestion(jobCategory: string): Promise<InterviewQuestion> {
+  const response = await fetch('/api/interview/question', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jobCategory }),
+  });
+
+  if (!response.ok) {
+    const err = (await response.json().catch(() => ({}))) as { error?: string };
+    throw new Error(err.error ?? 'Failed to get interview question');
+  }
+
+  return response.json() as Promise<InterviewQuestion>;
+}
+
+export async function getInterviewFeedback(
+  question: string,
+  answer: string,
+  jobCategory: string,
+): Promise<InterviewFeedback> {
+  const response = await fetch('/api/interview/feedback', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question, answer, jobCategory }),
+  });
+
+  if (!response.ok) {
+    const err = (await response.json().catch(() => ({}))) as { error?: string };
+    throw new Error(err.error ?? 'Failed to get feedback');
+  }
+
+  return response.json() as Promise<InterviewFeedback>;
+}
+
 export interface Definition {
   word: string;
   punjabi: string;

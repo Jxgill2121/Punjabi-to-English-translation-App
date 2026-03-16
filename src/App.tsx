@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { GradeSelector } from './components/GradeSelector';
 import { StoryDisplay } from './components/StoryDisplay';
+import { InterviewPractice } from './components/InterviewPractice';
 import { generateStory } from './api';
 import './App.css';
 
@@ -37,7 +38,10 @@ function loadHistory(): HistoryEntry[] {
   return [];
 }
 
+type Tab = 'stories' | 'interview';
+
 function App() {
+  const [activeTab, setActiveTab] = useState<Tab>('stories');
   const [grade, setGrade] = useState(1);
   const [topic, setTopic] = useState('animals');
   const [story, setStory] = useState('');
@@ -116,12 +120,25 @@ function App() {
             <span className="title-pun">ਅੰਗਰੇਜ਼ੀ ਸਿੱਖੋ</span>
             <span className="title-en">Learn English with Stories</span>
           </h1>
-          <p className="subtitle">
-            ਕਿਸੇ ਵੀ ਸ਼ਬਦ ਨੂੰ ਛੂਹੋ — ਇਸਨੂੰ ਸੁਣੋ ਅਤੇ ਪੰਜਾਬੀ ਵਿੱਚ ਅਰਥ ਜਾਣੋ
-          </p>
-          <p className="subtitle subtitle-small">
-            Tap any word to hear it pronounced and see its Punjabi meaning
-          </p>
+          {activeTab === 'stories' ? (
+            <>
+              <p className="subtitle">
+                ਕਿਸੇ ਵੀ ਸ਼ਬਦ ਨੂੰ ਛੂਹੋ — ਇਸਨੂੰ ਸੁਣੋ ਅਤੇ ਪੰਜਾਬੀ ਵਿੱਚ ਅਰਥ ਜਾਣੋ
+              </p>
+              <p className="subtitle subtitle-small">
+                Tap any word to hear it pronounced and see its Punjabi meaning
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="subtitle">
+                ਇੰਟਰਵਿਊ ਦੀ ਤਿਆਰੀ ਕਰੋ — ਸਵਾਲ ਪੰਜਾਬੀ ਅਤੇ ਅੰਗਰੇਜ਼ੀ ਵਿੱਚ
+              </p>
+              <p className="subtitle subtitle-small">
+                Practice job interviews — questions shown in Punjabi and English
+              </p>
+            </>
+          )}
           {learnedWords.size > 0 && (
             <div className="words-learned-badge">
               ✨ {learnedWords.size} ਸ਼ਬਦ ਸਿੱਖੇ / words learned
@@ -130,9 +147,30 @@ function App() {
         </div>
       </header>
 
+      {/* ── Tab Nav ── */}
+      <nav className="tab-nav">
+        <button
+          className={`tab-btn${activeTab === 'stories' ? ' active' : ''}`}
+          onClick={() => setActiveTab('stories')}
+        >
+          <span>📖</span>
+          <span className="tab-en">Stories</span>
+          <span className="tab-pun">ਕਹਾਣੀਆਂ</span>
+        </button>
+        <button
+          className={`tab-btn${activeTab === 'interview' ? ' active' : ''}`}
+          onClick={() => setActiveTab('interview')}
+        >
+          <span></span>
+          <span className="tab-en">Interview Prep</span>
+          <span className="tab-pun">ਇੰਟਰਵਿਊ</span>
+        </button>
+      </nav>
+
       {/* ── Controls ── */}
       <main className="main">
-        <div className="controls-card">
+        {activeTab === 'interview' && <InterviewPractice />}
+        <div className="controls-card" style={activeTab === 'interview' ? { display: 'none' } : {}}>
           <GradeSelector
             selectedGrade={grade}
             onGradeChange={setGrade}
@@ -194,63 +232,68 @@ function App() {
           </div>
         </div>
 
-        {/* ── Error ── */}
-        {error && (
-          <div className="error-banner" role="alert">
-            ⚠️ {error}
-          </div>
-        )}
-
-        {/* ── Story ── */}
-        {(story || isGenerating) && !error && (
-          <StoryDisplay
-            story={story}
-            isGenerating={isGenerating}
-            fontSize={fontSize}
-            learnedWords={learnedWords}
-            onWordLearned={handleWordLearned}
-          />
-        )}
-
-        {/* ── Empty state ── */}
-        {!story && !isGenerating && !error && (
-          <div className="empty-state">
-            <div className="empty-icon">📚</div>
-            <p className="empty-pun">
-              ਉੱਪਰ ਪੱਧਰ ਅਤੇ ਵਿਸ਼ਾ ਚੁਣੋ, ਫਿਰ ਕਹਾਣੀ ਸ਼ੁਰੂ ਕਰੋ
-            </p>
-            <p className="empty-en">
-              Choose a level and topic above, then tap &ldquo;Start Story&rdquo;
-            </p>
-          </div>
-        )}
-
-        {/* ── Story history ── */}
-        {storyHistory.length > 0 && (
-          <div className="history-section">
-            <button
-              className="history-toggle"
-              onClick={() => setShowHistory((p) => !p)}
-            >
-              {showHistory ? '▲' : '▼'}&nbsp;
-              ਪਿਛਲੀਆਂ ਕਹਾਣੀਆਂ / Previous Stories ({storyHistory.length})
-            </button>
-            {showHistory && (
-              <div className="history-list">
-                {storyHistory.map((entry, i) => (
-                  <div key={i} className="history-item">
-                    <div className="history-meta">
-                      Grade {entry.grade} · {entry.topic.charAt(0).toUpperCase() + entry.topic.slice(1)}
-                    </div>
-                    <p className="history-preview">{entry.text.slice(0, 90)}…</p>
-                    <button className="btn-text-link" onClick={() => loadFromHistory(entry)}>
-                      ਪੜ੍ਹੋ / Read again →
-                    </button>
-                  </div>
-                ))}
+        {/* ── Stories-only sections ── */}
+        {activeTab === 'stories' && (
+          <>
+            {/* Error */}
+            {error && (
+              <div className="error-banner" role="alert">
+                ⚠️ {error}
               </div>
             )}
-          </div>
+
+            {/* Story */}
+            {(story || isGenerating) && !error && (
+              <StoryDisplay
+                story={story}
+                isGenerating={isGenerating}
+                fontSize={fontSize}
+                learnedWords={learnedWords}
+                onWordLearned={handleWordLearned}
+              />
+            )}
+
+            {/* Empty state */}
+            {!story && !isGenerating && !error && (
+              <div className="empty-state">
+                <div className="empty-icon">📚</div>
+                <p className="empty-pun">
+                  ਉੱਪਰ ਪੱਧਰ ਅਤੇ ਵਿਸ਼ਾ ਚੁਣੋ, ਫਿਰ ਕਹਾਣੀ ਸ਼ੁਰੂ ਕਰੋ
+                </p>
+                <p className="empty-en">
+                  Choose a level and topic above, then tap &ldquo;Start Story&rdquo;
+                </p>
+              </div>
+            )}
+
+            {/* Story history */}
+            {storyHistory.length > 0 && (
+              <div className="history-section">
+                <button
+                  className="history-toggle"
+                  onClick={() => setShowHistory((p) => !p)}
+                >
+                  {showHistory ? '▲' : '▼'}&nbsp;
+                  ਪਿਛਲੀਆਂ ਕਹਾਣੀਆਂ / Previous Stories ({storyHistory.length})
+                </button>
+                {showHistory && (
+                  <div className="history-list">
+                    {storyHistory.map((entry, i) => (
+                      <div key={i} className="history-item">
+                        <div className="history-meta">
+                          Grade {entry.grade} · {entry.topic.charAt(0).toUpperCase() + entry.topic.slice(1)}
+                        </div>
+                        <p className="history-preview">{entry.text.slice(0, 90)}…</p>
+                        <button className="btn-text-link" onClick={() => loadFromHistory(entry)}>
+                          ਪੜ੍ਹੋ / Read again →
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
       </main>
     </div>

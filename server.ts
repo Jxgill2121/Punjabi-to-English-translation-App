@@ -152,6 +152,102 @@ EXAMPLE: [One simple, clear English sentence using the word "${word}"]`,
   }
 });
 
+// POST /api/interview/question — returns an interview question with Punjabi translation
+app.post('/api/interview/question', async (req: Request, res: Response) => {
+  const { jobCategory } = req.body as { jobCategory: string };
+
+  if (!jobCategory) {
+    res.status(400).json({ error: 'jobCategory is required' });
+    return;
+  }
+
+  try {
+    const response = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 400,
+      messages: [
+        {
+          role: 'user',
+          content: `Generate one common English job interview question for a ${jobCategory} position. The person is a Punjabi speaker learning English who may be new to the workforce.
+
+Respond in exactly this format with no extra text:
+
+QUESTION: [The interview question in English — keep it clear and common]
+PUNJABI: [The same question translated to Punjabi in Gurmukhi script]
+TIP: [A very short tip in English — max 10 words — on what to mention in the answer]`,
+        },
+      ],
+    });
+
+    const text = response.content[0].type === 'text' ? response.content[0].text : '';
+    const questionMatch = text.match(/QUESTION:\s*(.+?)(?=\nPUNJABI:|$)/s);
+    const punjabiMatch = text.match(/PUNJABI:\s*(.+?)(?=\nTIP:|$)/s);
+    const tipMatch = text.match(/TIP:\s*(.+?)$/s);
+
+    res.json({
+      question: questionMatch ? questionMatch[1].trim() : '',
+      punjabi: punjabiMatch ? punjabiMatch[1].trim() : '',
+      tip: tipMatch ? tipMatch[1].trim() : '',
+    });
+  } catch (err) {
+    console.error('Interview question error:', err);
+    res.status(500).json({ error: 'Failed to generate question. Please try again.' });
+  }
+});
+
+// POST /api/interview/feedback — evaluates an interview answer
+app.post('/api/interview/feedback', async (req: Request, res: Response) => {
+  const { question, answer, jobCategory } = req.body as {
+    question: string;
+    answer: string;
+    jobCategory: string;
+  };
+
+  if (!question || !answer) {
+    res.status(400).json({ error: 'question and answer are required' });
+    return;
+  }
+
+  try {
+    const response = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 700,
+      messages: [
+        {
+          role: 'user',
+          content: `A Punjabi speaker learning English is practicing for a ${jobCategory || 'general'} job interview.
+
+Interview question: "${question}"
+Their answer: "${answer}"
+
+Please evaluate their answer kindly and helpfully. Respond in exactly this format with no extra text:
+
+SCORE: [good / ok / needs-work]
+FEEDBACK_EN: [2–3 sentences of kind, encouraging feedback in simple English. Mention what was good and what to improve.]
+FEEDBACK_PUNJABI: [Same feedback in Punjabi using Gurmukhi script]
+EXAMPLE: [A strong sample answer in simple English — 2–3 sentences — that they can learn from]`,
+        },
+      ],
+    });
+
+    const text = response.content[0].type === 'text' ? response.content[0].text : '';
+    const scoreMatch = text.match(/SCORE:\s*(.+?)(?=\n|$)/);
+    const feedbackEnMatch = text.match(/FEEDBACK_EN:\s*(.+?)(?=\nFEEDBACK_PUNJABI:|$)/s);
+    const feedbackPunjabiMatch = text.match(/FEEDBACK_PUNJABI:\s*(.+?)(?=\nEXAMPLE:|$)/s);
+    const exampleMatch = text.match(/EXAMPLE:\s*(.+?)$/s);
+
+    res.json({
+      score: scoreMatch ? scoreMatch[1].trim() : 'ok',
+      feedbackEn: feedbackEnMatch ? feedbackEnMatch[1].trim() : '',
+      feedbackPunjabi: feedbackPunjabiMatch ? feedbackPunjabiMatch[1].trim() : '',
+      example: exampleMatch ? exampleMatch[1].trim() : '',
+    });
+  } catch (err) {
+    console.error('Interview feedback error:', err);
+    res.status(500).json({ error: 'Failed to get feedback. Please try again.' });
+  }
+});
+
 // Serve built frontend in production
 if (process.env.NODE_ENV === 'production') {
   const distPath = path.join(process.cwd(), 'dist');
