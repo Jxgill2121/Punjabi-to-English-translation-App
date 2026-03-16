@@ -923,6 +923,42 @@ button {
 /* ════════════════════════════════════════
    Interview Practice
    ════════════════════════════════════════ */
+/* Canada Post banner */
+.canada-post-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, #c8102e 0%, #a00d25 100%);
+  border-radius: var(--radius-sm);
+  color: white;
+}
+
+.canada-post-icon {
+  font-size: 2rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.canada-post-title {
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.01em;
+}
+
+.canada-post-sub {
+  font-family: var(--font-gurmukhi);
+  font-size: 0.8rem;
+  opacity: 0.85;
+  margin-top: 2px;
+}
+
+.interview-q-total {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
 .interview-wrap {
   display: flex;
   flex-direction: column;

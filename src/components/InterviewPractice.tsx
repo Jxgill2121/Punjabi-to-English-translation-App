@@ -1,49 +1,120 @@
-import { useState, useCallback } from 'react';
-import { getInterviewQuestion, getInterviewFeedback } from '../api';
-import type { InterviewQuestion, InterviewFeedback } from '../api';
+import { useState, useCallback, useRef } from 'react';
+import { getInterviewFeedback } from '../api';
+import type { InterviewFeedback } from '../api';
 
-const JOB_CATEGORIES = [
-  { value: 'retail / store cashier', en: 'Retail', pun: 'ਦੁਕਾਨ' },
-  { value: 'food service / restaurant', en: 'Food Service', pun: 'ਰੈਸਟੋਰੈਂਟ' },
-  { value: 'childcare / babysitting', en: 'Childcare', pun: 'ਬੱਚਿਆਂ ਦੀ ਦੇਖਭਾਲ' },
-  { value: 'cleaning / housekeeping', en: 'Cleaning', pun: 'ਸਫ਼ਾਈ' },
-  { value: 'office assistant / admin', en: 'Office', pun: 'ਦਫ਼ਤਰ' },
-  { value: 'healthcare aide / caregiver', en: 'Healthcare', pun: 'ਸਿਹਤ ਸੇਵਾ' },
+// ── Canada Post Letter Carrier question bank ──────────────────────────────────
+const CANADA_POST_QUESTIONS = [
+  {
+    question:
+      'Describe a time when the company you worked for provided poor customer service which resulted in a customer not being pleased. How did you handle this situation?',
+    punjabi:
+      'ਦੱਸੋ ਕਦੋਂ ਤੁਹਾਡੀ ਕੰਪਨੀ ਨੇ ਮਾੜੀ ਗਾਹਕ ਸੇਵਾ ਦਿੱਤੀ ਜਿਸ ਨਾਲ ਗਾਹਕ ਨਾਖੁਸ਼ ਹੋਇਆ। ਤੁਸੀਂ ਇਹ ਕਿਵੇਂ ਸੰਭਾਲਿਆ?',
+    tip: 'Use a real example. Describe what you did to fix the problem and make the customer feel heard.',
+  },
+  {
+    question:
+      'You noticed that a new employee seems to be having trouble finding his/her way around the depot. What would you do?',
+    punjabi:
+      'ਤੁਸੀਂ ਦੇਖਿਆ ਕਿ ਇੱਕ ਨਵੇਂ ਕਰਮਚਾਰੀ ਨੂੰ ਡਿੱਪੋ ਵਿੱਚ ਰਸਤਾ ਲੱਭਣ ਵਿੱਚ ਮੁਸ਼ਕਲ ਹੋ ਰਹੀ ਹੈ। ਤੁਸੀਂ ਕੀ ਕਰੋਗੇ?',
+    tip: 'Show teamwork and initiative. Offer to help and make them feel welcome.',
+  },
+  {
+    question:
+      'You report to work, go out on the floor to start your shift, and see a potential hazardous situation. There is no one around. How would you handle the situation?',
+    punjabi:
+      'ਤੁਸੀਂ ਕੰਮ \'ਤੇ ਆਉਂਦੇ ਹੋ ਅਤੇ ਫ਼ਰਸ਼ \'ਤੇ ਇੱਕ ਖ਼ਤਰਨਾਕ ਸਥਿਤੀ ਦੇਖਦੇ ਹੋ। ਕੋਈ ਵੀ ਆਲੇ-ਦੁਆਲੇ ਨਹੀਂ ਹੈ। ਤੁਸੀਂ ਕੀ ਕਰੋਗੇ?',
+    tip: 'Safety first. Describe the steps you would take immediately to protect yourself and others.',
+  },
+  {
+    question:
+      'Tell me about yourself and why you want to work as a Letter Carrier for Canada Post.',
+    punjabi:
+      'ਆਪਣੇ ਬਾਰੇ ਦੱਸੋ ਅਤੇ ਦੱਸੋ ਕਿ ਤੁਸੀਂ ਕੈਨੇਡਾ ਪੋਸਟ ਵਿੱਚ ਲੈਟਰ ਕੈਰੀਅਰ ਕਿਉਂ ਬਣਨਾ ਚਾਹੁੰਦੇ ਹੋ?',
+    tip: 'Mention reliability, physical fitness, love of working outdoors, and serving the community.',
+  },
+  {
+    question:
+      'This job requires walking 15–20 km per day and lifting packages up to 50 lbs. How do you prepare yourself physically for this kind of demanding work?',
+    punjabi:
+      'ਇਸ ਨੌਕਰੀ ਵਿੱਚ ਰੋਜ਼ਾਨਾ 15–20 ਕਿਲੋਮੀਟਰ ਤੁਰਨਾ ਅਤੇ 50 ਪੌਂਡ ਤੱਕ ਦੇ ਪਾਰਸਲ ਚੁੱਕਣੇ ਪੈਂਦੇ ਹਨ। ਤੁਸੀਂ ਕਿਵੇਂ ਸਰੀਰਕ ਤੌਰ \'ਤੇ ਤਿਆਰ ਰਹਿੰਦੇ ਹੋ?',
+    tip: 'Mention staying active, healthy habits, and any physical work experience you have.',
+  },
+  {
+    question:
+      'How do you handle working outdoors in all types of weather — including heavy rain, snow, and extreme cold?',
+    punjabi:
+      'ਤੁਸੀਂ ਹਰ ਮੌਸਮ ਵਿੱਚ ਬਾਹਰ ਕੰਮ ਕਰਨ ਬਾਰੇ ਕਿਵੇਂ ਮਹਿਸੂਸ ਕਰਦੇ ਹੋ — ਮੀਂਹ, ਬਰਫ਼ ਅਤੇ ਸਖ਼ਤ ਠੰਡ ਵਿੱਚ?',
+    tip: 'Be positive. Mention dressing properly for weather and past outdoor work experience.',
+  },
+  {
+    question:
+      'Describe a time when you had to manage a heavy workload under a tight deadline. How did you handle it?',
+    punjabi:
+      'ਦੱਸੋ ਕਦੋਂ ਤੁਹਾਨੂੰ ਸਮੇਂ ਦੀ ਦਬਾਅ ਹੇਠ ਬਹੁਤ ਜ਼ਿਆਦਾ ਕੰਮ ਕਰਨਾ ਪਿਆ। ਤੁਸੀਂ ਕਿਵੇਂ ਸੰਭਾਲਿਆ?',
+    tip: 'Give a specific example. Show that you stay calm, prioritize tasks, and keep working steadily.',
+  },
+  {
+    question:
+      'How do you make sure that mail and packages are delivered accurately to the correct address every time?',
+    punjabi:
+      'ਤੁਸੀਂ ਕਿਵੇਂ ਯਕੀਨੀ ਕਰਦੇ ਹੋ ਕਿ ਡਾਕ ਅਤੇ ਪਾਰਸਲ ਹਮੇਸ਼ਾ ਸਹੀ ਪਤੇ \'ਤੇ ਪਹੁੰਚੇ?',
+    tip: 'Mention double-checking addresses, careful sorting, and taking your time to be accurate.',
+  },
+  {
+    question:
+      'What would you do if a customer is not home and the package requires a signature?',
+    punjabi:
+      'ਜੇ ਗਾਹਕ ਘਰ \'ਤੇ ਨਹੀਂ ਅਤੇ ਪਾਰਸਲ \'ਤੇ ਦਸਤਖਤ ਜ਼ਰੂਰੀ ਹਨ, ਤੁਸੀਂ ਕੀ ਕਰੋਗੇ?',
+    tip: 'Follow Canada Post procedure: leave a notice card with pickup instructions.',
+  },
+  {
+    question:
+      'Describe a time when you showed up consistently and reliably for a job, even when conditions were difficult.',
+    punjabi:
+      'ਦੱਸੋ ਕਦੋਂ ਤੁਸੀਂ ਔਖੀਆਂ ਹਾਲਤਾਂ ਵਿੱਚ ਵੀ ਭਰੋਸੇਯੋਗਤਾ ਨਾਲ ਕੰਮ \'ਤੇ ਆਉਂਦੇ ਰਹੇ।',
+    tip: 'Give a specific example that shows your dedication and dependability as an employee.',
+  },
 ];
 
 const SCORE_CONFIG = {
-  good: { label: 'Great answer!', punLabel: 'ਸ਼ਾਨਦਾਰ ਜਵਾਬ!', color: 'score-good', icon: '' },
-  ok: { label: 'Good start!', punLabel: 'ਚੰਗੀ ਸ਼ੁਰੂਆਤ!', color: 'score-ok', icon: '' },
-  'needs-work': { label: 'Keep practicing!', punLabel: 'ਹੋਰ ਅਭਿਆਸ ਕਰੋ!', color: 'score-needs-work', icon: '' },
+  good: { label: 'Great answer!', punLabel: 'ਸ਼ਾਨਦਾਰ ਜਵਾਬ!', color: 'score-good' },
+  ok: { label: 'Good start!', punLabel: 'ਚੰਗੀ ਸ਼ੁਰੂਆਤ!', color: 'score-ok' },
+  'needs-work': { label: 'Keep practicing!', punLabel: 'ਹੋਰ ਅਭਿਆਸ ਕਰੋ!', color: 'score-needs-work' },
 };
 
+function pickNextQuestion(
+  current: number | null,
+  seen: Set<number>,
+  total: number,
+): number {
+  // Reset if all questions have been seen
+  const pool = seen.size >= total
+    ? Array.from({ length: total }, (_, i) => i)
+    : Array.from({ length: total }, (_, i) => i).filter((i) => !seen.has(i) && i !== current);
+
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
 export function InterviewPractice() {
-  const [jobCategory, setJobCategory] = useState('retail / store cashier');
-  const [question, setQuestion] = useState<InterviewQuestion | null>(null);
+  const [questionIndex, setQuestionIndex] = useState<number | null>(null);
   const [answer, setAnswer] = useState('');
   const [feedback, setFeedback] = useState<InterviewFeedback | null>(null);
-  const [isLoadingQuestion, setIsLoadingQuestion] = useState(false);
   const [isLoadingFeedback, setIsLoadingFeedback] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [questionCount, setQuestionCount] = useState(0);
+  const [questionNum, setQuestionNum] = useState(0);
+  const seenRef = useRef<Set<number>>(new Set());
 
-  const handleGetQuestion = useCallback(async () => {
-    setIsLoadingQuestion(true);
-    setError(null);
-    setQuestion(null);
+  const question = questionIndex !== null ? CANADA_POST_QUESTIONS[questionIndex] : null;
+
+  const handleGetQuestion = useCallback(() => {
+    const next = pickNextQuestion(questionIndex, seenRef.current, CANADA_POST_QUESTIONS.length);
+    seenRef.current.add(next);
+    setQuestionIndex(next);
     setAnswer('');
     setFeedback(null);
-
-    try {
-      const q = await getInterviewQuestion(jobCategory);
-      setQuestion(q);
-      setQuestionCount((c) => c + 1);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
-    } finally {
-      setIsLoadingQuestion(false);
-    }
-  }, [jobCategory]);
+    setError(null);
+    setQuestionNum((n) => n + 1);
+  }, [questionIndex]);
 
   const handleGetFeedback = useCallback(async () => {
     if (!question || !answer.trim()) return;
@@ -52,68 +123,44 @@ export function InterviewPractice() {
     setFeedback(null);
 
     try {
-      const fb = await getInterviewFeedback(question.question, answer.trim(), jobCategory);
+      const fb = await getInterviewFeedback(
+        question.question,
+        answer.trim(),
+        'Canada Post Letter Carrier',
+      );
       setFeedback(fb);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
     } finally {
       setIsLoadingFeedback(false);
     }
-  }, [question, answer, jobCategory]);
-
-  const handleNextQuestion = useCallback(() => {
-    setQuestion(null);
-    setAnswer('');
-    setFeedback(null);
-    setError(null);
-    handleGetQuestion();
-  }, [handleGetQuestion]);
+  }, [question, answer]);
 
   const scoreInfo = feedback ? SCORE_CONFIG[feedback.score] ?? SCORE_CONFIG.ok : null;
 
   return (
     <div className="interview-wrap">
-      {/* Job category selector */}
+      {/* Header card */}
       <div className="controls-card">
-        <div className="topic-selector">
-          <p className="section-label">
-            ਨੌਕਰੀ ਦੀ ਕਿਸਮ ਚੁਣੋ&nbsp;<span className="section-label-en">/ Choose Job Type</span>
-          </p>
-          <div className="topic-grid">
-            {JOB_CATEGORIES.map(({ value, en, pun }) => (
-              <button
-                key={value}
-                className={`topic-btn${jobCategory === value ? ' active' : ''}`}
-                onClick={() => {
-                  setJobCategory(value);
-                  setQuestion(null);
-                  setAnswer('');
-                  setFeedback(null);
-                  setError(null);
-                }}
-                disabled={isLoadingQuestion || isLoadingFeedback}
-              >
-                <span className="topic-en">{en}</span>
-                <span className="topic-pun">{pun}</span>
-              </button>
-            ))}
+        <div className="canada-post-banner">
+          <div className="canada-post-icon">📬</div>
+          <div>
+            <p className="canada-post-title">Canada Post — Letter Carrier</p>
+            <p className="canada-post-sub">
+              {CANADA_POST_QUESTIONS.length} ਅਭਿਆਸ ਸਵਾਲ / {CANADA_POST_QUESTIONS.length} practice questions
+            </p>
           </div>
         </div>
 
         <button
           className="btn btn-generate"
-          onClick={question ? handleNextQuestion : handleGetQuestion}
-          disabled={isLoadingQuestion || isLoadingFeedback}
+          onClick={handleGetQuestion}
+          disabled={isLoadingFeedback}
         >
-          {isLoadingQuestion ? (
-            <>
-              <span className="spinner" aria-hidden="true" />
-              ਸਵਾਲ ਆ ਰਿਹਾ ਹੈ… / Loading question…
-            </>
-          ) : question ? (
+          {question ? (
             <>ਅਗਲਾ ਸਵਾਲ / Next Question</>
           ) : (
-            <>ਇੰਟਰਵਿਊ ਸ਼ੁਰੂ ਕਰੋ / Start Interview</>
+            <>📬 ਇੰਟਰਵਿਊ ਸ਼ੁਰੂ ਕਰੋ / Start Interview</>
           )}
         </button>
       </div>
@@ -126,24 +173,21 @@ export function InterviewPractice() {
       )}
 
       {/* Question card */}
-      {question && !isLoadingQuestion && (
+      {question && (
         <div className="interview-card">
           <div className="interview-q-header">
-            <span className="interview-q-badge">
-              {questionCount > 0 ? `ਸਵਾਲ ${questionCount}` : 'ਸਵਾਲ'}
-            </span>
+            <span className="interview-q-badge">ਸਵਾਲ {questionNum}</span>
+            <span className="interview-q-total">of {CANADA_POST_QUESTIONS.length}</span>
           </div>
 
           <p className="interview-question-en">{question.question}</p>
           <p className="interview-question-pun">{question.punjabi}</p>
 
-          {question.tip && (
-            <div className="interview-tip">
-              <span className="interview-tip-label">Tip:</span> {question.tip}
-            </div>
-          )}
+          <div className="interview-tip">
+            <span className="interview-tip-label">Tip:</span> {question.tip}
+          </div>
 
-          {/* Answer area */}
+          {/* Answer area — hide after feedback submitted */}
           {!feedback && (
             <div className="interview-answer-area">
               <label className="interview-answer-label" htmlFor="answer-input">
@@ -155,7 +199,7 @@ export function InterviewPractice() {
                 value={answer}
                 onChange={(e) => setAnswer(e.target.value)}
                 placeholder="Type your answer here in English…"
-                rows={4}
+                rows={5}
                 disabled={isLoadingFeedback}
               />
               <button
@@ -179,7 +223,6 @@ export function InterviewPractice() {
           {feedback && scoreInfo && (
             <div className="interview-feedback">
               <div className={`interview-score ${scoreInfo.color}`}>
-                <span className="score-icon">{scoreInfo.icon}</span>
                 <span className="score-label-en">{scoreInfo.label}</span>
                 <span className="score-label-pun">{scoreInfo.punLabel}</span>
               </div>
@@ -210,17 +253,9 @@ export function InterviewPractice() {
 
               <button
                 className="btn btn-generate"
-                onClick={handleNextQuestion}
-                disabled={isLoadingQuestion}
+                onClick={handleGetQuestion}
               >
-                {isLoadingQuestion ? (
-                  <>
-                    <span className="spinner" aria-hidden="true" />
-                    ਸਵਾਲ ਆ ਰਿਹਾ ਹੈ…
-                  </>
-                ) : (
-                  <>ਅਗਲਾ ਸਵਾਲ / Next Question</>
-                )}
+                ਅਗਲਾ ਸਵਾਲ / Next Question
               </button>
             </div>
           )}
@@ -228,14 +263,14 @@ export function InterviewPractice() {
       )}
 
       {/* Empty state */}
-      {!question && !isLoadingQuestion && !error && (
+      {!question && !error && (
         <div className="empty-state">
-          <div className="empty-icon"></div>
+          <div className="empty-icon">📬</div>
           <p className="empty-pun">
-            ਨੌਕਰੀ ਦੀ ਕਿਸਮ ਚੁਣੋ ਅਤੇ ਇੰਟਰਵਿਊ ਸ਼ੁਰੂ ਕਰੋ
+            ਕੈਨੇਡਾ ਪੋਸਟ ਇੰਟਰਵਿਊ ਦੀ ਤਿਆਰੀ ਕਰੋ
           </p>
           <p className="empty-en">
-            Choose a job type and tap "Start Interview" to practice
+            Practice real Canada Post Letter Carrier interview questions
           </p>
         </div>
       )}
