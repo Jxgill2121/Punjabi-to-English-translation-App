@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { getInterviewFeedback } from '../api';
 import type { InterviewFeedback } from '../api';
 
@@ -82,42 +82,97 @@ const SCORE_CONFIG = {
   'needs-work': { label: 'Keep practicing!', punLabel: 'ਹੋਰ ਅਭਿਆਸ ਕਰੋ!', color: 'score-needs-work' },
 };
 
-function pickNextQuestion(
-  current: number | null,
-  seen: Set<number>,
-  total: number,
-): number {
-  // Reset if all questions have been seen
-  const pool = seen.size >= total
-    ? Array.from({ length: total }, (_, i) => i)
-    : Array.from({ length: total }, (_, i) => i).filter((i) => !seen.has(i) && i !== current);
+// Speech Recognition type shim
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+const speechSupported = !!SpeechRecognition;
 
+function pickNextQuestion(current: number | null, seen: Set<number>, total: number): number {
+  const pool =
+    seen.size >= total
+      ? Array.from({ length: total }, (_, i) => i)
+      : Array.from({ length: total }, (_, i) => i).filter((i) => !seen.has(i) && i !== current);
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
 export function InterviewPractice() {
   const [questionIndex, setQuestionIndex] = useState<number | null>(null);
-  const [answer, setAnswer] = useState('');
+  const [transcript, setTranscript] = useState('');
+  const [isRecording, setIsRecording] = useState(false);
   const [feedback, setFeedback] = useState<InterviewFeedback | null>(null);
   const [isLoadingFeedback, setIsLoadingFeedback] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [questionNum, setQuestionNum] = useState(0);
+  const [speechError, setSpeechError] = useState<string | null>(null);
+
   const seenRef = useRef<Set<number>>(new Set());
+  const recognitionRef = useRef<InstanceType<typeof SpeechRecognition> | null>(null);
 
   const question = questionIndex !== null ? CANADA_POST_QUESTIONS[questionIndex] : null;
 
+  // Clean up recognition on unmount
+  useEffect(() => {
+    return () => {
+      recognitionRef.current?.abort();
+    };
+  }, []);
+
   const handleGetQuestion = useCallback(() => {
+    recognitionRef.current?.abort();
+    setIsRecording(false);
     const next = pickNextQuestion(questionIndex, seenRef.current, CANADA_POST_QUESTIONS.length);
     seenRef.current.add(next);
     setQuestionIndex(next);
-    setAnswer('');
+    setTranscript('');
     setFeedback(null);
     setError(null);
+    setSpeechError(null);
     setQuestionNum((n) => n + 1);
   }, [questionIndex]);
 
+  const handleStartRecording = useCallback(() => {
+    if (!speechSupported) return;
+    setSpeechError(null);
+    setTranscript('');
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-CA';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let full = '';
+      for (let i = 0; i < event.results.length; i++) {
+        full += event.results[i][0].transcript;
+      }
+      setTranscript(full);
+    };
+
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      if (event.error === 'not-allowed') {
+        setSpeechError('Microphone access was denied. Please allow microphone access and try again.');
+      } else if (event.error !== 'aborted') {
+        setSpeechError('Could not hear you. Please try again.');
+      }
+      setIsRecording(false);
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsRecording(true);
+  }, []);
+
+  const handleStopRecording = useCallback(() => {
+    recognitionRef.current?.stop();
+    setIsRecording(false);
+  }, []);
+
   const handleGetFeedback = useCallback(async () => {
-    if (!question || !answer.trim()) return;
+    if (!question || !transcript.trim()) return;
     setIsLoadingFeedback(true);
     setError(null);
     setFeedback(null);
@@ -125,7 +180,7 @@ export function InterviewPractice() {
     try {
       const fb = await getInterviewFeedback(
         question.question,
-        answer.trim(),
+        transcript.trim(),
         'Canada Post Letter Carrier',
       );
       setFeedback(fb);
@@ -134,7 +189,7 @@ export function InterviewPractice() {
     } finally {
       setIsLoadingFeedback(false);
     }
-  }, [question, answer]);
+  }, [question, transcript]);
 
   const scoreInfo = feedback ? SCORE_CONFIG[feedback.score] ?? SCORE_CONFIG.ok : null;
 
@@ -155,15 +210,18 @@ export function InterviewPractice() {
         <button
           className="btn btn-generate"
           onClick={handleGetQuestion}
-          disabled={isLoadingFeedback}
+          disabled={isLoadingFeedback || isRecording}
         >
-          {question ? (
-            <>ਅਗਲਾ ਸਵਾਲ / Next Question</>
-          ) : (
-            <>📬 ਇੰਟਰਵਿਊ ਸ਼ੁਰੂ ਕਰੋ / Start Interview</>
-          )}
+          {question ? <>ਅਗਲਾ ਸਵਾਲ / Next Question</> : <>📬 ਇੰਟਰਵਿਊ ਸ਼ੁਰੂ ਕਰੋ / Start Interview</>}
         </button>
       </div>
+
+      {/* Speech not supported warning */}
+      {!speechSupported && (
+        <div className="error-banner" role="alert">
+          Your browser does not support speech recognition. Please use Chrome or Safari.
+        </div>
+      )}
 
       {/* Error */}
       {error && (
@@ -187,35 +245,72 @@ export function InterviewPractice() {
             <span className="interview-tip-label">Tip:</span> {question.tip}
           </div>
 
-          {/* Answer area — hide after feedback submitted */}
-          {!feedback && (
+          {/* Voice answer area */}
+          {!feedback && speechSupported && (
             <div className="interview-answer-area">
-              <label className="interview-answer-label" htmlFor="answer-input">
-                ਆਪਣਾ ਜਵਾਬ ਲਿਖੋ / Write your answer in English:
-              </label>
-              <textarea
-                id="answer-input"
-                className="interview-textarea"
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-                placeholder="Type your answer here in English…"
-                rows={5}
-                disabled={isLoadingFeedback}
-              />
-              <button
-                className="btn btn-interview-submit"
-                onClick={handleGetFeedback}
-                disabled={!answer.trim() || isLoadingFeedback}
-              >
-                {isLoadingFeedback ? (
-                  <>
-                    <span className="spinner" aria-hidden="true" />
-                    ਜਾਂਚ ਹੋ ਰਹੀ ਹੈ… / Checking…
-                  </>
+              <p className="interview-answer-label">
+                ਮਾਈਕ ਦਬਾਓ ਅਤੇ ਅੰਗਰੇਜ਼ੀ ਵਿੱਚ ਬੋਲੋ / Press mic and speak your answer in English:
+              </p>
+
+              {/* Mic button */}
+              <div className="mic-center">
+                {!isRecording ? (
+                  <button
+                    className="mic-btn"
+                    onClick={handleStartRecording}
+                    disabled={isLoadingFeedback}
+                    aria-label="Start recording"
+                  >
+                    <span className="mic-icon">🎤</span>
+                    <span className="mic-label">
+                      {transcript ? 'ਦੁਬਾਰਾ ਬੋਲੋ / Speak Again' : 'ਬੋਲੋ / Speak'}
+                    </span>
+                  </button>
                 ) : (
-                  <>ਜਵਾਬ ਜਮ੍ਹਾਂ ਕਰੋ / Submit Answer</>
+                  <button
+                    className="mic-btn mic-btn-recording"
+                    onClick={handleStopRecording}
+                    aria-label="Stop recording"
+                  >
+                    <span className="mic-pulse" aria-hidden="true" />
+                    <span className="mic-icon">⏹</span>
+                    <span className="mic-label">ਰੋਕੋ / Stop</span>
+                  </button>
                 )}
-              </button>
+              </div>
+
+              {/* Speech error */}
+              {speechError && (
+                <p className="speech-error">{speechError}</p>
+              )}
+
+              {/* Live transcript */}
+              {(transcript || isRecording) && (
+                <div className={`transcript-box${isRecording ? ' transcript-recording' : ''}`}>
+                  <span className="transcript-label">
+                    {isRecording ? '🔴 ਸੁਣ ਰਿਹਾ ਹੈ… / Listening…' : '✅ ਤੁਸੀਂ ਕਿਹਾ / You said:'}
+                  </span>
+                  <p className="transcript-text">{transcript || '…'}</p>
+                </div>
+              )}
+
+              {/* Submit button — only show once recording stopped and there's a transcript */}
+              {transcript && !isRecording && (
+                <button
+                  className="btn btn-interview-submit"
+                  onClick={handleGetFeedback}
+                  disabled={isLoadingFeedback}
+                >
+                  {isLoadingFeedback ? (
+                    <>
+                      <span className="spinner" aria-hidden="true" />
+                      ਜਾਂਚ ਹੋ ਰਹੀ ਹੈ… / Checking…
+                    </>
+                  ) : (
+                    <>ਜਵਾਬ ਭੇਜੋ / Submit Answer</>
+                  )}
+                </button>
+              )}
             </div>
           )}
 
@@ -228,8 +323,8 @@ export function InterviewPractice() {
               </div>
 
               <div className="feedback-your-answer">
-                <span className="feedback-section-label">Your answer:</span>
-                <p className="feedback-answer-text">{answer}</p>
+                <span className="feedback-section-label">You said:</span>
+                <p className="feedback-answer-text">{transcript}</p>
               </div>
 
               <div className="feedback-block">
@@ -251,10 +346,7 @@ export function InterviewPractice() {
                 </div>
               )}
 
-              <button
-                className="btn btn-generate"
-                onClick={handleGetQuestion}
-              >
+              <button className="btn btn-generate" onClick={handleGetQuestion}>
                 ਅਗਲਾ ਸਵਾਲ / Next Question
               </button>
             </div>
@@ -266,12 +358,8 @@ export function InterviewPractice() {
       {!question && !error && (
         <div className="empty-state">
           <div className="empty-icon">📬</div>
-          <p className="empty-pun">
-            ਕੈਨੇਡਾ ਪੋਸਟ ਇੰਟਰਵਿਊ ਦੀ ਤਿਆਰੀ ਕਰੋ
-          </p>
-          <p className="empty-en">
-            Practice real Canada Post Letter Carrier interview questions
-          </p>
+          <p className="empty-pun">ਕੈਨੇਡਾ ਪੋਸਟ ਇੰਟਰਵਿਊ ਦੀ ਤਿਆਰੀ ਕਰੋ</p>
+          <p className="empty-en">Practice real Canada Post Letter Carrier interview questions</p>
         </div>
       )}
     </div>
